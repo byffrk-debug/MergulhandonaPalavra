@@ -34,18 +34,42 @@ const getYouTubeThumbnail = (url: string) => {
 
 const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const certificateRef = useRef<HTMLDivElement>(null);
+  const [bgImage, setBgImage] = useState<string>("https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  useEffect(() => {
+    // Fetch image and convert to base64 to completely bypass html2canvas CORS issues
+    const fetchImage = async () => {
+      try {
+        const targetUrl = "https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6";
+        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+        const response = await fetch(proxyUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) {
+            setBgImage(reader.result as string);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Error fetching image via proxy", error);
+      }
+    };
+    fetchImage();
+  }, []);
 
   const handleDownload = async () => {
-    if (!certificateRef.current) return;
+    if (!certificateRef.current || isGenerating) return;
     
-    // Show a loading toast or state if possible, but for now just proceed
+    setIsGenerating(true);
     const loadingToast = toast.loading('Gerando certificado...');
     
     try {
       const canvas = await html2canvas(certificateRef.current, { 
         scale: 2,
         useCORS: true,
-        backgroundColor: null // Preserve transparency if any
+        backgroundColor: '#ffffff'
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -59,6 +83,8 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
     } catch (error) {
       console.error('Error generating PDF', error);
       toast.error('Erro ao gerar PDF. Tente novamente.', { id: loadingToast });
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -84,11 +110,11 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
             {/* The Certificate itself */}
             <div 
               ref={certificateRef}
-              className={`w-full aspect-[1.414/1] relative flex flex-col items-center justify-center overflow-hidden`}
+              className={`w-full aspect-[1.414/1] relative flex flex-col items-center justify-center overflow-hidden bg-white`}
             >
               {/* Background Image */}
               <img 
-                src="https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6" 
+                src={bgImage} 
                 alt="Certificado Background" 
                 className="absolute inset-0 w-full h-full object-cover z-0"
                 crossOrigin="anonymous"
