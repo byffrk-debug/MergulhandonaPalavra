@@ -6,6 +6,7 @@ import ReactPlayer from 'react-player';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from './lib/supabase';
+import certificadoBgUrl from './assets/certificado-bg.png';
 
 type User = {
   id: string;
@@ -55,7 +56,8 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
       img.onerror = (err) => {
         console.error("Error loading image for PDF", err);
       };
-      img.src = "/certificado-bg.png";
+      img.crossOrigin = "anonymous";
+      img.src = certificadoBgUrl;
     };
     prepareImage();
   }, []);
@@ -137,7 +139,7 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               {/* Background Image */}
               <img 
                 ref={bgImageRef}
-                src="/certificado-bg.png" 
+                src={certificadoBgUrl} 
                 alt="Certificado Background" 
                 className="absolute inset-0 w-full h-full object-cover z-0"
               />
