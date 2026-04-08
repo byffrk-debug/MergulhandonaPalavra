@@ -1,22 +1,20 @@
-const fs = require('fs');
-const https = require('https');
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-https.get('https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6', (res) => {
-  if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303) {
-    https.get(res.headers.location, (res2) => {
-      const file = fs.createWriteStream('public/certificado-bg.png');
-      res2.pipe(file);
-      file.on('finish', () => {
-        file.close();
-        console.log('Download completed');
-      });
-    });
-  } else {
-    const file = fs.createWriteStream('public/certificado-bg.png');
-    res.pipe(file);
-    file.on('finish', () => {
-      file.close();
-      console.log('Download completed');
-    });
-  }
-});
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+View your app in AI Studio: https://ai.studio/apps/db608e56-490c-4080-bceb-95d74ad84404
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
