@@ -214,6 +214,7 @@ export default function App() {
   const [lastPlayedSeconds, setLastPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -326,7 +327,8 @@ export default function App() {
     const { data, error } = await supabase.from('videos').insert([{
       title: newTitle,
       url: newUrl,
-      module: newModule
+      module: newModule,
+      content: newContent
     }]).select();
 
     if (error) {
@@ -335,6 +337,8 @@ export default function App() {
       setVideos([...videos, data[0]]);
       setNewTitle('');
       setNewUrl('');
+      setNewContent('');
+      setNewModule('');
       toast.success('Aula adicionada com sucesso!');
     }
   };
@@ -366,10 +370,12 @@ export default function App() {
     setWatchedSeconds(0);
     setLastPlayedSeconds(0);
     setDuration(0);
+    setIsPlaying(true);
   };
 
   const closeVideo = () => {
     setActiveVideo(null);
+    setIsPlaying(false);
   };
 
   const completedCount = videos.filter(v => userProgress[v.id]).length;
@@ -816,14 +822,14 @@ export default function App() {
                   width="100%"
                   height="100%"
                   controls
-                  playing
+                  playing={isPlaying}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                   playbackRate={playbackRate}
-                  onDurationChange={(e) => {
-                    const duration = (e.target as HTMLVideoElement).duration;
-                    if (duration) setDuration(duration);
+                  onDuration={(duration) => {
+                    setDuration(duration);
                   }}
-                  onTimeUpdate={(e) => {
-                    const playedSeconds = (e.target as HTMLVideoElement).currentTime;
+                  onProgress={({ playedSeconds }) => {
                     const diff = playedSeconds - lastPlayedSeconds;
                     if (diff > 0 && diff < 2) {
                       setWatchedSeconds(prev => prev + diff);
