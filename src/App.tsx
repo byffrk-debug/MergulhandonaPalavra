@@ -6,7 +6,6 @@ import ReactPlayer from 'react-player';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from './lib/supabase';
-import certificadoBgUrl from './assets/certificado-bg.png';
 
 type User = {
   id: string;
@@ -37,6 +36,27 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const certificateRef = useRef<HTMLDivElement>(null);
   const bgImageRef = useRef<HTMLImageElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [base64Bg, setBase64Bg] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Convert imported image to base64 for jsPDF
+    const fetchImage = async () => {
+      try {
+        const response = await fetch("/certificado-bg.png");
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (reader.result) {
+            setBase64Bg(reader.result as string);
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Error fetching local image", error);
+      }
+    };
+    fetchImage();
+  }, []);
 
   const handleDownload = async () => {
     if (isGenerating) return;
@@ -45,7 +65,7 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
     const loadingToast = toast.loading('Gerando certificado...');
     
     try {
-      if (!bgImageRef.current) {
+      if (!base64Bg) {
         throw new Error("Imagem de fundo ainda está carregando.");
       }
 
@@ -59,7 +79,7 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
       // 1. Add background image
-      pdf.addImage(bgImageRef.current, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.addImage(base64Bg, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
       // 2. Add Student Name
       pdf.setFont('times', 'normal');
@@ -115,10 +135,9 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               {/* Background Image */}
               <img 
                 ref={bgImageRef}
-                src={certificadoBgUrl} 
+                src="/certificado-bg.png" 
                 alt="Certificado Background" 
                 className="absolute inset-0 w-full h-full object-cover z-0"
-                crossOrigin="anonymous"
               />
 
               {/* Overlay Text - Absolute positioning for precise alignment */}
