@@ -1,22 +1,40 @@
-const fs = require('fs');
-const https = require('https');
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
-https.get('https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6', (res) => {
-  if (res.statusCode === 301 || res.statusCode === 302 || res.statusCode === 303) {
-    https.get(res.headers.location, (res2) => {
-      const file = fs.createWriteStream('public/certificado-bg.png');
-      res2.pipe(file);
-      file.on('finish', () => {
-        file.close();
-        console.log('Download completed');
-      });
-    });
-  } else {
-    const file = fs.createWriteStream('public/certificado-bg.png');
-    res.pipe(file);
-    file.on('finish', () => {
-      file.close();
-      console.log('Download completed');
-    });
+interface Props {
+  children?: ReactNode;
+}
+
+interface State {
+  hasError: boolean;
+  error: Error | null;
+}
+
+export class ErrorBoundary extends Component<Props, State> {
+  public state: State = {
+    hasError: false,
+    error: null
+  };
+
+  public static getDerivedStateFromError(error: Error): State {
+    return { hasError: true, error };
   }
-});
+
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('Uncaught error:', error, errorInfo);
+  }
+
+  public render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', color: 'red', backgroundColor: '#111', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+          <h2>Algo deu errado.</h2>
+          <details style={{ whiteSpace: 'pre-wrap' }}>
+            {this.state.error && this.state.error.toString()}
+          </details>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
