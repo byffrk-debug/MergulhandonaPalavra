@@ -345,7 +345,7 @@ export default function App() {
           className="w-full max-w-md bg-gray-900/80 backdrop-blur-md border border-gray-800 rounded-3xl p-8 shadow-2xl relative z-10"
         >
           <div className="text-center mb-8">
-            <img src="https://lh3.googleusercontent.com/d/1h3i2esfp_492dNktVDa_3lZExUVGR1zo" alt="Mergulhando na Palavra" className="h-24 mx-auto mb-4 object-contain" referrerPolicy="no-referrer" />
+            <img src="https://lh3.googleusercontent.com/d/1pJASlSKVV2jccAQOE1X4UYVgQd1m6k1q" alt="Mergulhando na Palavra" className="h-24 mx-auto mb-4 object-contain" referrerPolicy="no-referrer" />
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-pink-500">
               Mergulhando na Palavra
             </h1>
@@ -478,7 +478,7 @@ export default function App() {
       <nav className="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center text-cyan-400 font-bold text-xl">
-            <img src="https://lh3.googleusercontent.com/d/1h3i2esfp_492dNktVDa_3lZExUVGR1zo" alt="Logo" className="h-8 mr-3 object-contain" referrerPolicy="no-referrer" />
+            <img src="https://lh3.googleusercontent.com/d/1pJASlSKVV2jccAQOE1X4UYVgQd1m6k1q" alt="Logo" className="h-8 mr-3 object-contain" referrerPolicy="no-referrer" />
             Mergulhando na Palavra
           </div>
           <div className="flex items-center gap-4">
