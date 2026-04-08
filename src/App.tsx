@@ -6,7 +6,7 @@ import ReactPlayer from 'react-player';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { supabase } from './lib/supabase';
-import certificadoBgUrl from './assets/certificado-bg.png';
+import { certificadoBase64 } from './assets/certificadoBase64';
 
 type User = {
   id: string;
@@ -37,30 +37,6 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const certificateRef = useRef<HTMLDivElement>(null);
   const bgImageRef = useRef<HTMLImageElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [base64Bg, setBase64Bg] = useState<string | null>(null);
-
-  useEffect(() => {
-    // Load image into canvas and convert to JPEG for maximum jsPDF compatibility
-    const prepareImage = () => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          setBase64Bg(canvas.toDataURL('image/jpeg', 1.0));
-        }
-      };
-      img.onerror = (err) => {
-        console.error("Error loading image for PDF", err);
-      };
-      img.crossOrigin = "anonymous";
-      img.src = certificadoBgUrl;
-    };
-    prepareImage();
-  }, []);
 
   const handleDownload = async () => {
     if (isGenerating) return;
@@ -69,10 +45,6 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
     const loadingToast = toast.loading('Gerando certificado...');
     
     try {
-      if (!base64Bg) {
-        throw new Error("Imagem de fundo ainda está carregando.");
-      }
-
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -82,8 +54,8 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // 1. Add background image (JPEG is much more reliable in jsPDF)
-      pdf.addImage(base64Bg, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      // 1. Add background image (PNG base64 directly)
+      pdf.addImage(certificadoBase64, 'PNG', 0, 0, pdfWidth, pdfHeight);
 
       // 2. Add Student Name (Y: ~31.5%)
       pdf.setFont('times', 'normal');
@@ -139,7 +111,7 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               {/* Background Image */}
               <img 
                 ref={bgImageRef}
-                src={certificadoBgUrl} 
+                src={certificadoBase64} 
                 alt="Certificado Background" 
                 className="absolute inset-0 w-full h-full object-cover z-0"
               />
