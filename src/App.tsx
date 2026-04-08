@@ -39,23 +39,25 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const [base64Bg, setBase64Bg] = useState<string | null>(null);
 
   useEffect(() => {
-    // Convert imported image to base64 for jsPDF
-    const fetchImage = async () => {
-      try {
-        const response = await fetch("/certificado-bg.png");
-        const blob = await response.blob();
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          if (reader.result) {
-            setBase64Bg(reader.result as string);
-          }
-        };
-        reader.readAsDataURL(blob);
-      } catch (error) {
-        console.error("Error fetching local image", error);
-      }
+    // Load image into canvas and convert to JPEG for maximum jsPDF compatibility
+    const prepareImage = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          setBase64Bg(canvas.toDataURL('image/jpeg', 1.0));
+        }
+      };
+      img.onerror = (err) => {
+        console.error("Error loading image for PDF", err);
+      };
+      img.src = "/certificado-bg.png";
     };
-    fetchImage();
+    prepareImage();
   }, []);
 
   const handleDownload = async () => {
@@ -78,25 +80,25 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
 
-      // 1. Add background image
-      pdf.addImage(base64Bg, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      // 1. Add background image (JPEG is much more reliable in jsPDF)
+      pdf.addImage(base64Bg, 'JPEG', 0, 0, pdfWidth, pdfHeight);
 
-      // 2. Add Student Name
+      // 2. Add Student Name (Y: ~31.5%)
       pdf.setFont('times', 'normal');
-      pdf.setFontSize(40);
-      pdf.setTextColor(17, 24, 39); // text-gray-900
-      pdf.text(user.name, pdfWidth / 2, pdfHeight * 0.29, { align: 'center' });
+      pdf.setFontSize(36);
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(user.name, pdfWidth / 2, pdfHeight * 0.315, { align: 'center' });
 
-      // 3. Add Module Name
+      // 3. Add Module Name (Y: ~44%)
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(20);
-      pdf.setTextColor(31, 41, 55); // text-gray-800
+      pdf.setFontSize(18);
+      pdf.setTextColor(31, 41, 55);
       pdf.text(moduleName.toUpperCase(), pdfWidth / 2, pdfHeight * 0.44, { align: 'center' });
 
-      // 4. Add Date
+      // 4. Add Date (X: ~23.1%, Y: ~64.2%)
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(14);
-      pdf.text(new Date().toLocaleDateString('pt-BR'), pdfWidth * 0.25, pdfHeight * 0.62, { align: 'center' });
+      pdf.text(new Date().toLocaleDateString('pt-BR'), pdfWidth * 0.231, pdfHeight * 0.642, { align: 'center' });
 
       pdf.save(`Certificado_${moduleName.replace(/\s+/g, '_')}.pdf`);
       toast.success('Certificado baixado com sucesso!', { id: loadingToast });
@@ -144,21 +146,21 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               <div className="absolute inset-0 z-10">
                 
                 {/* Student Name */}
-                <div className="absolute top-[24%] w-full text-center px-12">
+                <div className="absolute w-full text-center px-12" style={{ top: '31.5%' }}>
                   <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal text-gray-900 tracking-wide" style={{ fontFamily: 'serif' }}>
                     {user.name}
                   </h2>
                 </div>
                 
                 {/* Module Name */}
-                <div className="absolute top-[40%] w-full text-center px-12">
+                <div className="absolute w-full text-center px-12" style={{ top: '44%' }}>
                   <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-gray-800 uppercase tracking-wider">
                     {moduleName}
                   </h3>
                 </div>
                 
                 {/* Date */}
-                <div className="absolute top-[60%] left-[25%] transform -translate-x-1/2 text-center w-48">
+                <div className="absolute text-center w-48" style={{ top: '64.2%', left: '23.1%', transform: 'translateX(-50%)' }}>
                   <p className="font-normal text-gray-800 text-sm md:text-base">{new Date().toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
