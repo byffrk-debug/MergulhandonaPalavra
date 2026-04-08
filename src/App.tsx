@@ -216,6 +216,9 @@ export default function App() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
 
+  const lastPlayedRef = useRef(0);
+  const watchedRef = useRef(0);
+
   // Supabase Auth Listener
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -371,6 +374,8 @@ export default function App() {
     setLastPlayedSeconds(0);
     setDuration(0);
     setIsPlaying(true);
+    lastPlayedRef.current = 0;
+    watchedRef.current = 0;
   };
 
   const closeVideo = () => {
@@ -830,14 +835,16 @@ export default function App() {
                     setDuration(duration);
                   }}
                   onProgress={({ playedSeconds }) => {
-                    const diff = playedSeconds - lastPlayedSeconds;
+                    const diff = playedSeconds - lastPlayedRef.current;
                     if (diff > 0 && diff < 2) {
-                      setWatchedSeconds(prev => prev + diff);
+                      watchedRef.current += diff;
+                      setWatchedSeconds(watchedRef.current);
                     }
+                    lastPlayedRef.current = playedSeconds;
                     setLastPlayedSeconds(playedSeconds);
 
                     if (duration > 0 && activeVideo && user) {
-                      const percentWatched = watchedSeconds / duration;
+                      const percentWatched = watchedRef.current / duration;
                       if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
                         setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
                         supabase.from('user_progress').insert([{
