@@ -89,22 +89,26 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
                 crossOrigin="anonymous"
               />
 
-              {/* Overlay Text - Adjust positioning as needed based on the actual image layout */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center pt-[15%] z-10">
+              {/* Overlay Text - Absolute positioning for precise alignment */}
+              <div className="absolute inset-0 z-10">
                 
                 {/* Student Name */}
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-8 text-center" style={{ fontFamily: 'serif' }}>
-                  {user.name}
-                </h2>
+                <div className="absolute top-[26%] w-full text-center px-12">
+                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900" style={{ fontFamily: 'serif' }}>
+                    {user.name}
+                  </h2>
+                </div>
                 
                 {/* Module Name */}
-                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-800 mt-[5%] text-center">
-                  {moduleName}
-                </h3>
+                <div className="absolute top-[40%] w-full text-center px-12">
+                  <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 uppercase">
+                    {moduleName}
+                  </h3>
+                </div>
                 
                 {/* Date */}
-                <div className="absolute bottom-[18%] left-[25%] transform -translate-x-1/2 text-center">
-                  <p className="font-medium text-gray-800 text-lg md:text-xl">{new Date().toLocaleDateString('pt-BR')}</p>
+                <div className="absolute top-[60%] left-[25%] transform -translate-x-1/2 text-center w-48">
+                  <p className="font-medium text-gray-800 text-base md:text-lg">{new Date().toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
             </div>
@@ -677,7 +681,7 @@ export default function App() {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: moduleVideos.length * 0.05 }}
-                        onClick={() => !user.isAdmin && setActiveCertificateModule(moduleName)}
+                        onClick={() => progress.percent === 100 && setActiveCertificateModule(moduleName)}
                         className={`cursor-pointer group flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 ${
                           progress.percent === 100 
                             ? 'bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
