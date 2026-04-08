@@ -211,13 +211,9 @@ export default function App() {
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [activeCertificateModule, setActiveCertificateModule] = useState<string | null>(null);
   const [watchedSeconds, setWatchedSeconds] = useState(0);
-  const [lastPlayedSeconds, setLastPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
-
-  const lastPlayedRef = useRef(0);
-  const watchedRef = useRef(0);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -371,11 +367,8 @@ export default function App() {
   const openVideo = (video: Video) => {
     setActiveVideo(video);
     setWatchedSeconds(0);
-    setLastPlayedSeconds(0);
     setDuration(0);
     setIsPlaying(true);
-    lastPlayedRef.current = 0;
-    watchedRef.current = 0;
   };
 
   const closeVideo = () => {
@@ -834,34 +827,25 @@ export default function App() {
                   onDuration={(duration) => {
                     setDuration(duration);
                   }}
-                  onProgress={({ playedSeconds }) => {
-                    const diff = playedSeconds - lastPlayedRef.current;
-                    if (diff > 0 && diff < 2) {
-                      watchedRef.current += diff;
-                      setWatchedSeconds(watchedRef.current);
-                    }
-                    lastPlayedRef.current = playedSeconds;
-                    setLastPlayedSeconds(playedSeconds);
+                  onProgress={({ playedSeconds, played }) => {
+                    setWatchedSeconds(playedSeconds);
 
-                    if (duration > 0 && activeVideo && user) {
-                      const percentWatched = watchedRef.current / duration;
-                      if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
-                        setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
-                        supabase.from('user_progress').insert([{
-                          user_id: user.id,
-                          video_id: activeVideo.id,
-                          completed: true
-                        }]).then(({ error }) => {
-                          if (error) {
-                            console.error('Erro ao salvar progresso:', error);
-                            setUserProgress(prev => {
-                              const newProgress = { ...prev };
-                              delete newProgress[activeVideo.id];
-                              return newProgress;
-                            });
-                          }
-                        });
-                      }
+                    if (activeVideo && user && played >= 0.75 && !userProgress[activeVideo.id]) {
+                      setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
+                      supabase.from('user_progress').insert([{
+                        user_id: user.id,
+                        video_id: activeVideo.id,
+                        completed: true
+                      }]).then(({ error }) => {
+                        if (error) {
+                          console.error('Erro ao salvar progresso:', error);
+                          setUserProgress(prev => {
+                            const newProgress = { ...prev };
+                            delete newProgress[activeVideo.id];
+                            return newProgress;
+                          });
+                        }
+                      });
                     }
                   }}
                 />
