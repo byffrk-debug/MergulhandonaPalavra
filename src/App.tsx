@@ -21,6 +21,17 @@ type Video = {
   module: string;
 };
 
+const getYouTubeId = (url: string) => {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
+const getYouTubeThumbnail = (url: string) => {
+  const id = getYouTubeId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
+};
+
 const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const certificateRef = useRef<HTMLDivElement>(null);
 
@@ -148,6 +159,7 @@ export default function App() {
   const [watchedSeconds, setWatchedSeconds] = useState(0);
   const [lastPlayedSeconds, setLastPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [playbackRate, setPlaybackRate] = useState(1);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -618,12 +630,23 @@ export default function App() {
                             }`}
                           >
                             <div className="flex items-center flex-1 min-w-0 mr-4">
-                              <div className="flex-shrink-0 mr-4">
-                                {isCompleted ? (
-                                  <CheckCircle className="w-8 h-8 text-cyan-400 drop-shadow-[0_0_5px_rgba(34,211,238,0.5)]" />
+                              <div className="flex-shrink-0 mr-4 relative w-32 h-20 rounded-lg overflow-hidden bg-gray-800 border border-gray-700 flex items-center justify-center">
+                                {getYouTubeThumbnail(video.url) ? (
+                                  <img 
+                                    src={getYouTubeThumbnail(video.url)!} 
+                                    alt="Thumbnail" 
+                                    className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity"
+                                  />
                                 ) : (
-                                  <Circle className="w-8 h-8 text-gray-600" />
+                                  <VideoIcon className="w-8 h-8 text-gray-600 absolute" />
                                 )}
+                                <div className="absolute inset-0 flex items-center justify-center z-10">
+                                  {isCompleted ? (
+                                    <CheckCircle className="w-8 h-8 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] bg-gray-900/60 rounded-full" />
+                                  ) : (
+                                    <Play className="w-8 h-8 text-white drop-shadow-lg opacity-0 group-hover:opacity-100 transition-opacity bg-cyan-500/80 rounded-full p-1.5" />
+                                  )}
+                                </div>
                               </div>
                               
                               <div className="flex-1 min-w-0">
@@ -697,9 +720,27 @@ export default function App() {
             <div className="w-full max-w-5xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
               <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-950">
                 <h3 className="text-lg font-medium text-white truncate pr-4">{activeVideo.title}</h3>
-                <button onClick={closeVideo} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
-                  <X className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-400 hidden sm:inline">Velocidade:</span>
+                    <select 
+                      value={playbackRate} 
+                      onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
+                      className="bg-gray-800 text-white text-sm rounded-lg px-2 py-1 border border-gray-700 outline-none focus:border-cyan-500 cursor-pointer"
+                    >
+                      <option value={0.5}>0.5x</option>
+                      <option value={0.75}>0.75x</option>
+                      <option value={1}>1x (Normal)</option>
+                      <option value={1.25}>1.25x</option>
+                      <option value={1.5}>1.5x</option>
+                      <option value={1.75}>1.75x</option>
+                      <option value={2}>2x</option>
+                    </select>
+                  </div>
+                  <button onClick={closeVideo} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
               </div>
               
               <div className="relative pt-[56.25%] bg-black">
@@ -710,6 +751,7 @@ export default function App() {
                   height="100%"
                   controls
                   playing
+                  playbackRate={playbackRate}
                   onDurationChange={(e) => {
                     const duration = (e.target as HTMLVideoElement).duration;
                     if (duration) setDuration(duration);
