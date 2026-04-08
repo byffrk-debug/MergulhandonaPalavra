@@ -37,11 +37,15 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
 
   const handleDownload = async () => {
     if (!certificateRef.current) return;
+    
+    // Show a loading toast or state if possible, but for now just proceed
+    const loadingToast = toast.loading('Gerando certificado...');
+    
     try {
       const canvas = await html2canvas(certificateRef.current, { 
         scale: 2,
         useCORS: true,
-        allowTaint: true
+        backgroundColor: null // Preserve transparency if any
       });
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
@@ -51,9 +55,10 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
       });
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
       pdf.save(`Certificado_${moduleName.replace(/\s+/g, '_')}.pdf`);
+      toast.success('Certificado baixado com sucesso!', { id: loadingToast });
     } catch (error) {
       console.error('Error generating PDF', error);
-      toast.error('Erro ao gerar PDF.');
+      toast.error('Erro ao gerar PDF. Tente novamente.', { id: loadingToast });
     }
   };
 
@@ -93,22 +98,22 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               <div className="absolute inset-0 z-10">
                 
                 {/* Student Name */}
-                <div className="absolute top-[26%] w-full text-center px-12">
-                  <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900" style={{ fontFamily: 'serif' }}>
+                <div className="absolute top-[24%] w-full text-center px-12">
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal text-gray-900 tracking-wide" style={{ fontFamily: 'serif' }}>
                     {user.name}
                   </h2>
                 </div>
                 
                 {/* Module Name */}
                 <div className="absolute top-[40%] w-full text-center px-12">
-                  <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-800 uppercase">
+                  <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-gray-800 uppercase tracking-wider">
                     {moduleName}
                   </h3>
                 </div>
                 
                 {/* Date */}
                 <div className="absolute top-[60%] left-[25%] transform -translate-x-1/2 text-center w-48">
-                  <p className="font-medium text-gray-800 text-base md:text-lg">{new Date().toLocaleDateString('pt-BR')}</p>
+                  <p className="font-normal text-gray-800 text-sm md:text-base">{new Date().toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
             </div>
