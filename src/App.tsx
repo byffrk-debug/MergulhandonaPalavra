@@ -34,16 +34,14 @@ const getYouTubeThumbnail = (url: string) => {
 
 const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const certificateRef = useRef<HTMLDivElement>(null);
-  const [bgImage, setBgImage] = useState<string>("https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6");
+  const [bgImage, setBgImage] = useState<string>("/certificado-bg.png");
   const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
-    // Fetch image and convert to base64 to completely bypass html2canvas CORS issues
+    // Fetch local image and convert to base64 for jsPDF
     const fetchImage = async () => {
       try {
-        const targetUrl = "https://lh3.googleusercontent.com/d/1XWBN6QFOTcRTmAWR_XEs1LAmYflSLw_6";
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
-        const response = await fetch(proxyUrl);
+        const response = await fetch("/certificado-bg.png");
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -53,36 +51,57 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
         };
         reader.readAsDataURL(blob);
       } catch (error) {
-        console.error("Error fetching image via proxy", error);
+        console.error("Error fetching local image", error);
       }
     };
     fetchImage();
   }, []);
 
   const handleDownload = async () => {
-    if (!certificateRef.current || isGenerating) return;
+    if (isGenerating) return;
     
     setIsGenerating(true);
     const loadingToast = toast.loading('Gerando certificado...');
     
     try {
-      const canvas = await html2canvas(certificateRef.current, { 
-        scale: 2,
-        useCORS: true,
-        backgroundColor: '#ffffff'
-      });
-      const imgData = canvas.toDataURL('image/png');
+      if (!bgImage.startsWith('data:')) {
+        throw new Error("Imagem de fundo ainda está carregando.");
+      }
+
       const pdf = new jsPDF({
         orientation: 'landscape',
-        unit: 'px',
-        format: [canvas.width, canvas.height]
+        unit: 'mm',
+        format: 'a4'
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // 1. Add background image
+      pdf.addImage(bgImage, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+      // 2. Add Student Name
+      pdf.setFont('times', 'normal');
+      pdf.setFontSize(40);
+      pdf.setTextColor(17, 24, 39); // text-gray-900
+      pdf.text(user.name, pdfWidth / 2, pdfHeight * 0.29, { align: 'center' });
+
+      // 3. Add Module Name
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(20);
+      pdf.setTextColor(31, 41, 55); // text-gray-800
+      pdf.text(moduleName.toUpperCase(), pdfWidth / 2, pdfHeight * 0.44, { align: 'center' });
+
+      // 4. Add Date
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(14);
+      pdf.text(new Date().toLocaleDateString('pt-BR'), pdfWidth * 0.25, pdfHeight * 0.62, { align: 'center' });
+
       pdf.save(`Certificado_${moduleName.replace(/\s+/g, '_')}.pdf`);
       toast.success('Certificado baixado com sucesso!', { id: loadingToast });
     } catch (error) {
       console.error('Error generating PDF', error);
-      toast.error('Erro ao gerar PDF. Tente novamente.', { id: loadingToast });
+      toast.error('Aguarde a imagem carregar e tente novamente.', { id: loadingToast });
     } finally {
       setIsGenerating(false);
     }
