@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, CheckCircle, Circle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon } from 'lucide-react';
+import { Play, CheckCircle, Circle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon, FileText } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
 import ReactPlayer from 'react-player';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+import ReactMarkdown from 'react-markdown';
 import { supabase } from './lib/supabase';
 import { certificadoBase64 } from './assets/certificadoBase64';
 
@@ -20,6 +19,7 @@ type Video = {
   title: string;
   url: string;
   module: string;
+  content?: string;
 };
 
 const getYouTubeId = (url: string) => {
@@ -45,41 +45,63 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
     const loadingToast = toast.loading('Gerando certificado...');
     
     try {
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a4'
-      });
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas não suportado');
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const img = new Image();
+      img.onload = () => {
+        // Set canvas to the exact dimensions of the background image
+        canvas.width = img.width;
+        canvas.height = img.height;
 
-      // 1. Add background image (PNG base64 directly)
-      pdf.addImage(certificadoBase64, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        // Draw background
+        ctx.drawImage(img, 0, 0);
 
-      // 2. Add Student Name (Y: ~31.5%)
-      pdf.setFont('times', 'normal');
-      pdf.setFontSize(36);
-      pdf.setTextColor(17, 24, 39);
-      pdf.text(user.name, pdfWidth / 2, pdfHeight * 0.315, { align: 'center' });
+        // Calculate font sizes relative to image height (assuming A4 proportions)
+        const nameFontSize = canvas.height * 0.055;
+        const moduleFontSize = canvas.height * 0.025;
+        const dateFontSize = canvas.height * 0.020;
 
-      // 3. Add Module Name (Y: ~44%)
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(18);
-      pdf.setTextColor(31, 41, 55);
-      pdf.text(moduleName.toUpperCase(), pdfWidth / 2, pdfHeight * 0.44, { align: 'center' });
+        // Draw Name (Y: ~31.5%)
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#111827';
+        ctx.font = `${nameFontSize}px "Times New Roman", Times, serif`;
+        ctx.fillText(user.name, canvas.width / 2, canvas.height * 0.315);
 
-      // 4. Add Date (X: ~23.1%, Y: ~64.2%)
-      pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(14);
-      pdf.text(new Date().toLocaleDateString('pt-BR'), pdfWidth * 0.231, pdfHeight * 0.642, { align: 'center' });
+        // Draw Module Name (Y: ~44%)
+        ctx.fillStyle = '#1f2937';
+        ctx.font = `${moduleFontSize}px Arial, Helvetica, sans-serif`;
+        ctx.fillText(moduleName.toUpperCase(), canvas.width / 2, canvas.height * 0.44);
 
-      pdf.save(`Certificado_${moduleName.replace(/\s+/g, '_')}.pdf`);
-      toast.success('Certificado baixado com sucesso!', { id: loadingToast });
+        // Draw Date (X: ~23.1%, Y: ~64.2%)
+        ctx.fillStyle = '#1f2937';
+        ctx.font = `${dateFontSize}px Arial, Helvetica, sans-serif`;
+        ctx.fillText(new Date().toLocaleDateString('pt-BR'), canvas.width * 0.231, canvas.height * 0.642);
+
+        // Generate Image URL
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        
+        // Trigger Download
+        const link = document.createElement('a');
+        link.download = `Certificado_${moduleName.replace(/\s+/g, '_')}.jpg`;
+        link.href = dataUrl;
+        link.click();
+
+        toast.success('Certificado baixado com sucesso!', { id: loadingToast });
+        setIsGenerating(false);
+      };
+      
+      img.onerror = () => {
+        toast.error('Erro ao carregar a imagem base do certificado.', { id: loadingToast });
+        setIsGenerating(false);
+      };
+      
+      img.src = certificadoBase64;
     } catch (error) {
-      console.error('Error generating PDF', error);
-      toast.error('Aguarde a imagem carregar e tente novamente.', { id: loadingToast });
-    } finally {
+      console.error('Error generating image', error);
+      toast.error('Erro ao gerar o certificado.', { id: loadingToast });
       setIsGenerating(false);
     }
   };
@@ -148,7 +170,7 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               className="px-8 py-4 rounded-xl font-bold text-gray-950 bg-cyan-400 hover:bg-cyan-300 transition-colors flex items-center shadow-[0_0_20px_rgba(34,211,238,0.4)]"
             >
               <Download className="w-6 h-6 mr-3" />
-              Baixar Certificado em PDF
+              Baixar Certificado (Imagem)
             </button>
           </div>
         </div>
@@ -183,6 +205,7 @@ export default function App() {
   const [newTitle, setNewTitle] = useState('');
   const [newUrl, setNewUrl] = useState('');
   const [newModule, setNewModule] = useState('');
+  const [newContent, setNewContent] = useState('');
 
   // Player States
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
@@ -613,6 +636,18 @@ export default function App() {
                   <input type="url" value={newUrl} onChange={(e) => setNewUrl(e.target.value)} required className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-pink-500/50 outline-none" />
                 </div>
               </div>
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-400 mb-1 flex items-center">
+                  <FileText className="w-4 h-4 mr-1" />
+                  Material Complementar (Opcional - Suporta Markdown)
+                </label>
+                <textarea 
+                  value={newContent} 
+                  onChange={(e) => setNewContent(e.target.value)} 
+                  placeholder="Escreva o resumo da aula, links úteis ou anotações aqui..." 
+                  className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500/50 outline-none min-h-[120px] resize-y font-mono text-sm"
+                />
+              </div>
               <div className="mt-6 flex justify-end">
                 <button type="submit" className="bg-cyan-500 text-gray-950 px-6 py-3 rounded-xl font-bold hover:bg-cyan-400 transition-colors flex items-center">
                   <Plus className="w-5 h-5 mr-2" /> Adicionar Aula
@@ -774,7 +809,7 @@ export default function App() {
                 </div>
               </div>
               
-              <div className="relative pt-[56.25%] bg-black">
+              <div className="relative pt-[56.25%] bg-black flex-shrink-0">
                 <ReactPlayer
                   src={activeVideo.url}
                   className="absolute top-0 left-0"
@@ -819,7 +854,7 @@ export default function App() {
                 />
               </div>
               
-              <div className="p-4 bg-gray-950 flex justify-between items-center text-sm">
+              <div className="p-4 bg-gray-950 flex justify-between items-center text-sm border-b border-gray-800 flex-shrink-0">
                 <div className="text-gray-400">
                   Progresso da visualização: <span className="text-cyan-400 font-mono">{duration > 0 ? Math.round((watchedSeconds / duration) * 100) : 0}%</span>
                   <span className="ml-2 text-xs text-gray-500">(Necessário 75% para concluir)</span>
@@ -830,6 +865,19 @@ export default function App() {
                   </div>
                 )}
               </div>
+
+              {/* Complementary Content Section */}
+              {activeVideo.content && (
+                <div className="p-6 bg-gray-900 overflow-y-auto max-h-[40vh] custom-scrollbar">
+                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                    <FileText className="w-5 h-5 mr-2 text-pink-400" />
+                    Material Complementar
+                  </h4>
+                  <div className="prose prose-invert prose-cyan max-w-none">
+                    <ReactMarkdown>{activeVideo.content}</ReactMarkdown>
+                  </div>
+                </div>
+              )}
             </div>
           </motion.div>
         )}
