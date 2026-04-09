@@ -783,9 +783,12 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/95 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex flex-col items-center justify-center p-2 sm:p-6 bg-black/95 backdrop-blur-md"
           >
-            <div className="w-full h-full sm:h-auto sm:max-h-[95vh] max-w-5xl bg-gray-900 border-0 sm:border border-gray-800 sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+            <div 
+              className="w-full max-w-5xl bg-gray-900 border border-gray-800 rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+              style={{ maxHeight: '100%' }}
+            >
               <div className="flex-shrink-0 flex justify-between items-center p-3 sm:p-4 border-b border-gray-800 bg-gray-950">
                 <h3 className="text-base sm:text-lg font-medium text-white truncate pr-2 sm:pr-4">{activeVideo.title}</h3>
                 <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
@@ -811,9 +814,9 @@ export default function App() {
               </div>
               
               <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-950">
-                <div className="w-full aspect-video bg-black">
+                <div className="w-full aspect-video bg-black flex-shrink-0">
                   <ReactPlayer
-                    src={activeVideo.url}
+                    url={activeVideo.url}
                     width="100%"
                     height="100%"
                     controls
@@ -822,7 +825,7 @@ export default function App() {
                     onPause={() => setIsPlaying(false)}
                     playbackRate={playbackRate}
                     onProgress={({ played }) => {
-                      const currentPercent = Math.round(played * 100);
+                      const currentPercent = Math.round((played || 0) * 100);
                       setPlayedPercent(currentPercent);
 
                       if (activeVideo && user && played >= 0.75 && !userProgress[activeVideo.id]) {
