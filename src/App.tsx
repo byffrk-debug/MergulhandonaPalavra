@@ -210,8 +210,7 @@ export default function App() {
   // Player States
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [activeCertificateModule, setActiveCertificateModule] = useState<string | null>(null);
-  const [watchedSeconds, setWatchedSeconds] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [playedPercent, setPlayedPercent] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
 
@@ -366,8 +365,7 @@ export default function App() {
 
   const openVideo = (video: Video) => {
     setActiveVideo(video);
-    setWatchedSeconds(0);
-    setDuration(0);
+    setPlayedPercent(0);
     setIsPlaying(true);
   };
 
@@ -785,96 +783,94 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4 bg-black/95 backdrop-blur-md"
           >
-            <div className="w-full max-w-5xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
-              <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-950">
-                <h3 className="text-lg font-medium text-white truncate pr-4">{activeVideo.title}</h3>
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-400 hidden sm:inline">Velocidade:</span>
+            <div className="w-full h-full sm:h-auto sm:max-h-[95vh] max-w-5xl bg-gray-900 border-0 sm:border border-gray-800 sm:rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+              <div className="flex-shrink-0 flex justify-between items-center p-3 sm:p-4 border-b border-gray-800 bg-gray-950">
+                <h3 className="text-base sm:text-lg font-medium text-white truncate pr-2 sm:pr-4">{activeVideo.title}</h3>
+                <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2">
+                    <span className="text-xs sm:text-sm text-gray-400 hidden sm:inline">Velocidade:</span>
                     <select 
                       value={playbackRate} 
                       onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
-                      className="bg-gray-800 text-white text-sm rounded-lg px-2 py-1 border border-gray-700 outline-none focus:border-cyan-500 cursor-pointer"
+                      className="bg-gray-800 text-white text-xs sm:text-sm rounded-lg px-1 sm:px-2 py-1 border border-gray-700 outline-none focus:border-cyan-500 cursor-pointer"
                     >
                       <option value={0.5}>0.5x</option>
                       <option value={0.75}>0.75x</option>
-                      <option value={1}>1x (Normal)</option>
+                      <option value={1}>1x</option>
                       <option value={1.25}>1.25x</option>
                       <option value={1.5}>1.5x</option>
-                      <option value={1.75}>1.75x</option>
                       <option value={2}>2x</option>
                     </select>
                   </div>
-                  <button onClick={closeVideo} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition-colors">
-                    <X className="w-6 h-6" />
+                  <button onClick={closeVideo} className="text-gray-400 hover:text-white p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 transition-colors bg-gray-800/50 sm:bg-transparent">
+                    <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
                 </div>
               </div>
               
-              <div className="relative pt-[56.25%] bg-black flex-shrink-0">
-                <ReactPlayer
-                  src={activeVideo.url}
-                  className="absolute top-0 left-0"
-                  width="100%"
-                  height="100%"
-                  controls
-                  playing={isPlaying}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  playbackRate={playbackRate}
-                  onDuration={(duration) => {
-                    setDuration(duration);
-                  }}
-                  onProgress={({ playedSeconds, played }) => {
-                    setWatchedSeconds(playedSeconds);
+              <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-950">
+                <div className="w-full aspect-video bg-black">
+                  <ReactPlayer
+                    src={activeVideo.url}
+                    width="100%"
+                    height="100%"
+                    controls
+                    playing={isPlaying}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    playbackRate={playbackRate}
+                    onProgress={({ played }) => {
+                      const currentPercent = Math.round(played * 100);
+                      setPlayedPercent(currentPercent);
 
-                    if (activeVideo && user && played >= 0.75 && !userProgress[activeVideo.id]) {
-                      setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
-                      supabase.from('user_progress').insert([{
-                        user_id: user.id,
-                        video_id: activeVideo.id,
-                        completed: true
-                      }]).then(({ error }) => {
-                        if (error) {
-                          console.error('Erro ao salvar progresso:', error);
-                          setUserProgress(prev => {
-                            const newProgress = { ...prev };
-                            delete newProgress[activeVideo.id];
-                            return newProgress;
-                          });
-                        }
-                      });
-                    }
-                  }}
-                />
-              </div>
-              
-              <div className="p-4 bg-gray-950 flex justify-between items-center text-sm border-b border-gray-800 flex-shrink-0">
-                <div className="text-gray-400">
-                  Progresso da visualização: <span className="text-cyan-400 font-mono">{duration > 0 ? Math.round((watchedSeconds / duration) * 100) : 0}%</span>
-                  <span className="ml-2 text-xs text-gray-500">(Necessário 75% para concluir)</span>
+                      if (activeVideo && user && played >= 0.75 && !userProgress[activeVideo.id]) {
+                        setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
+                        supabase.from('user_progress').insert([{
+                          user_id: user.id,
+                          video_id: activeVideo.id,
+                          completed: true
+                        }]).then(({ error }) => {
+                          if (error) {
+                            console.error('Erro ao salvar progresso:', error);
+                            setUserProgress(prev => {
+                              const newProgress = { ...prev };
+                              delete newProgress[activeVideo.id];
+                              return newProgress;
+                            });
+                          }
+                        });
+                      }
+                    }}
+                  />
                 </div>
-                {userProgress[activeVideo.id] && (
-                  <div className="flex items-center text-cyan-400 font-medium">
-                    <CheckCircle className="w-4 h-4 mr-1" /> Aula Concluída
+                
+                <div className="p-3 sm:p-4 bg-gray-950 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-sm border-b border-gray-800">
+                  <div className="text-gray-400 flex items-center flex-wrap gap-2">
+                    Progresso: <span className="text-cyan-400 font-mono font-bold text-base bg-cyan-950/30 px-2 py-0.5 rounded">{playedPercent}%</span>
+                    <span className="text-xs text-gray-500">(Necessário 75% para concluir)</span>
+                  </div>
+                  {userProgress[activeVideo.id] && (
+                    <div className="flex items-center text-cyan-400 font-medium bg-cyan-950/30 px-3 py-1.5 rounded-full">
+                      <CheckCircle className="w-4 h-4 mr-2" /> Aula Concluída
+                    </div>
+                  )}
+                </div>
+
+                {/* Complementary Content Section */}
+                {activeVideo.content && (
+                  <div className="p-4 sm:p-6 bg-gray-900 min-h-[30vh]">
+                    <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
+                      <FileText className="w-5 h-5 mr-2 text-pink-400" />
+                      Material Complementar
+                    </h4>
+                    <div className="prose prose-invert prose-cyan max-w-none prose-sm sm:prose-base">
+                      <ReactMarkdown>{activeVideo.content}</ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>
-
-              {/* Complementary Content Section */}
-              {activeVideo.content && (
-                <div className="p-6 bg-gray-900 overflow-y-auto max-h-[40vh] custom-scrollbar">
-                  <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
-                    <FileText className="w-5 h-5 mr-2 text-pink-400" />
-                    Material Complementar
-                  </h4>
-                  <div className="prose prose-invert prose-cyan max-w-none">
-                    <ReactMarkdown>{activeVideo.content}</ReactMarkdown>
-                  </div>
-                </div>
-              )}
             </div>
           </motion.div>
         )}
