@@ -212,7 +212,6 @@ export default function App() {
   const [activeCertificateModule, setActiveCertificateModule] = useState<string | null>(null);
   const [playedPercent, setPlayedPercent] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -366,12 +365,10 @@ export default function App() {
   const openVideo = (video: Video) => {
     setActiveVideo(video);
     setPlayedPercent(0);
-    setIsPlaying(true);
   };
 
   const closeVideo = () => {
     setActiveVideo(null);
-    setIsPlaying(false);
   };
 
   const completedCount = videos.filter(v => userProgress[v.id]).length;
@@ -814,15 +811,12 @@ export default function App() {
               </div>
               
               <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-950">
-                <div className="w-full aspect-video bg-black flex-shrink-0">
+                <div className="w-full aspect-video bg-black flex-shrink-0 relative">
                   <ReactPlayer
                     url={activeVideo.url}
                     width="100%"
                     height="100%"
                     controls
-                    playing={isPlaying}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
                     playbackRate={playbackRate}
                     onProgress={({ played }) => {
                       const currentPercent = Math.round((played || 0) * 100);
