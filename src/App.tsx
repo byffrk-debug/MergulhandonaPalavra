@@ -33,6 +33,31 @@ const getYouTubeThumbnail = (url: string) => {
   return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 };
 
+const getValidVideoUrl = (url?: string) => {
+  if (!url) return '';
+  // Remove invisible characters and trim
+  let cleanUrl = url.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+  
+  // Extract from iframe if needed
+  if (cleanUrl.startsWith('<iframe') && cleanUrl.includes('src="')) {
+    const match = cleanUrl.match(/src="([^"]+)"/);
+    if (match && match[1]) {
+      cleanUrl = match[1];
+    }
+  }
+  
+  // Handle protocol-relative URLs from iframes
+  if (cleanUrl.startsWith('//')) {
+    cleanUrl = `https:${cleanUrl}`;
+  }
+  // Add https:// if missing entirely
+  else if (!cleanUrl.startsWith('http://') && !cleanUrl.startsWith('https://')) {
+    cleanUrl = `https://${cleanUrl}`;
+  }
+  
+  return cleanUrl;
+};
+
 const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   const certificateRef = useRef<HTMLDivElement>(null);
   const bgImageRef = useRef<HTMLImageElement>(null);
@@ -212,7 +237,6 @@ export default function App() {
   const [activeCertificateModule, setActiveCertificateModule] = useState<string | null>(null);
   const [playedPercent, setPlayedPercent] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -375,12 +399,10 @@ export default function App() {
   const openVideo = (video: Video) => {
     setActiveVideo(video);
     setPlayedPercent(0);
-    setIsPlaying(true);
   };
 
   const closeVideo = () => {
     setActiveVideo(null);
-    setIsPlaying(false);
   };
 
   const completedCount = videos.filter(v => userProgress[v.id]).length;
@@ -801,21 +823,6 @@ export default function App() {
               <div className="flex-shrink-0 flex justify-between items-center p-3 sm:p-4 border-b border-gray-800 bg-gray-950">
                 <h3 className="text-base sm:text-lg font-medium text-white truncate pr-2 sm:pr-4">{activeVideo.title}</h3>
                 <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
-                  <div className="flex items-center gap-1 sm:gap-2">
-                    <span className="text-xs sm:text-sm text-gray-400 hidden sm:inline">Velocidade:</span>
-                    <select 
-                      value={playbackRate} 
-                      onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
-                      className="bg-gray-800 text-white text-xs sm:text-sm rounded-lg px-1 sm:px-2 py-1 border border-gray-700 outline-none focus:border-cyan-500 cursor-pointer"
-                    >
-                      <option value={0.5}>0.5x</option>
-                      <option value={0.75}>0.75x</option>
-                      <option value={1}>1x</option>
-                      <option value={1.25}>1.25x</option>
-                      <option value={1.5}>1.5x</option>
-                      <option value={2}>2x</option>
-                    </select>
-                  </div>
                   <button onClick={closeVideo} className="text-gray-400 hover:text-white p-1.5 sm:p-2 rounded-lg hover:bg-gray-800 transition-colors bg-gray-800/50 sm:bg-transparent">
                     <X className="w-5 h-5 sm:w-6 sm:h-6" />
                   </button>
@@ -825,18 +832,11 @@ export default function App() {
               <div className="flex-1 overflow-y-auto custom-scrollbar bg-gray-950">
                 <div className="w-full aspect-video bg-black flex-shrink-0 relative">
                   <ReactPlayer
-                    url={
-                      activeVideo.url?.trim().startsWith('<iframe') && activeVideo.url.includes('src="')
-                        ? activeVideo.url.match(/src="([^"]+)"/)?.[1] || activeVideo.url
-                        : activeVideo.url?.trim()
-                    }
+                    key={activeVideo.id}
+                    url={getValidVideoUrl(activeVideo.url)}
                     width="100%"
                     height="100%"
                     controls
-                    playing={isPlaying}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    playbackRate={playbackRate}
                     onProgress={({ played }) => {
                       const currentPercent = Math.round((played || 0) * 100);
                       setPlayedPercent(currentPercent);
