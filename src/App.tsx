@@ -811,17 +811,19 @@ export default function App() {
               
               <div className="relative pt-[56.25%] bg-black flex-shrink-0">
                 <ReactPlayer
-                  url={activeVideo.url}
+                  src={activeVideo.url}
                   className="absolute top-0 left-0"
                   width="100%"
                   height="100%"
                   controls
                   playing
                   playbackRate={playbackRate}
-                  onDuration={(duration) => {
+                  onDurationChange={(e) => {
+                    const duration = (e.target as HTMLVideoElement).duration;
                     if (duration) setDuration(duration);
                   }}
-                  onProgress={({ playedSeconds }) => {
+                  onTimeUpdate={(e) => {
+                    const playedSeconds = (e.target as HTMLVideoElement).currentTime;
                     const diff = playedSeconds - lastPlayedSeconds;
                     if (diff > 0 && diff < 2) {
                       setWatchedSeconds(prev => prev + diff);
