@@ -214,6 +214,7 @@ export default function App() {
   const [lastPlayedSeconds, setLastPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(true);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -366,6 +367,7 @@ export default function App() {
     setWatchedSeconds(0);
     setLastPlayedSeconds(0);
     setDuration(0);
+    setIsPlaying(true);
   };
 
   const closeVideo = () => {
@@ -816,6 +818,9 @@ export default function App() {
                   width="100%"
                   height="100%"
                   controls={true}
+                  playing={isPlaying}
+                  onPlay={() => setIsPlaying(true)}
+                  onPause={() => setIsPlaying(false)}
                   playbackRate={playbackRate}
                   onDuration={(duration) => {
                     if (duration) setDuration(duration);
