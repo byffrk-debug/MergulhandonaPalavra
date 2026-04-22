@@ -816,7 +816,7 @@ export default function App() {
               <div className="relative pt-[56.25%] bg-black flex-shrink-0">
                 <ReactPlayer
                   key={activeVideo.id}
-                  url={activeVideo.url}
+                  src={activeVideo.url} // <-- MUST be src in react-player v3!
                   className="absolute top-0 left-0"
                   width="100%"
                   height="100%"
@@ -827,10 +827,12 @@ export default function App() {
                   onEnded={() => setIsPlaying(false)}
                   playbackRate={playbackRate}
                   onError={(e) => console.error('Erro no player:', e)}
-                  onDuration={(duration) => {
+                  onDurationChange={(e) => {
+                    const duration = e.currentTarget.duration;
                     if (duration) setDuration(duration);
                   }}
-                  onProgress={({ playedSeconds }) => {
+                  onTimeUpdate={(e) => {
+                    const playedSeconds = e.currentTarget.currentTime;
                     const diff = playedSeconds - lastPlayedSeconds;
                     let nextWatchedSeconds = watchedSeconds;
                     
