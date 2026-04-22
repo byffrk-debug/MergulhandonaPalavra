@@ -214,7 +214,6 @@ export default function App() {
   const [lastPlayedSeconds, setLastPlayedSeconds] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(true);
 
   // Supabase Auth Listener
   useEffect(() => {
@@ -367,7 +366,6 @@ export default function App() {
     setWatchedSeconds(0);
     setLastPlayedSeconds(0);
     setDuration(0);
-    setIsPlaying(true);
   };
 
   const closeVideo = () => {
@@ -812,48 +810,88 @@ export default function App() {
               </div>
               
               <div className="relative pt-[56.25%] bg-black flex-shrink-0">
-                <ReactPlayer
-                  url={activeVideo.url}
-                  className="absolute top-0 left-0"
-                  width="100%"
-                  height="100%"
-                  controls={true}
-                  playing={isPlaying}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  playbackRate={playbackRate}
-                  onDuration={(duration) => {
-                    if (duration) setDuration(duration);
-                  }}
-                  onProgress={({ playedSeconds }) => {
-                    const diff = playedSeconds - lastPlayedSeconds;
-                    if (diff > 0 && diff < 2) {
-                      setWatchedSeconds(prev => prev + diff);
-                    }
-                    setLastPlayedSeconds(playedSeconds);
-
-                    if (duration > 0 && activeVideo && user) {
-                      const percentWatched = watchedSeconds / duration;
-                      if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
-                        setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
-                        supabase.from('user_progress').insert([{
-                          user_id: user.id,
-                          video_id: activeVideo.id,
-                          completed: true
-                        }]).then(({ error }) => {
-                          if (error) {
-                            console.error('Erro ao salvar progresso:', error);
-                            setUserProgress(prev => {
-                              const newProgress = { ...prev };
-                              delete newProgress[activeVideo.id];
-                              return newProgress;
-                            });
-                          }
-                        });
+                {getYouTubeId(activeVideo.url) ? (
+                  <ReactPlayer
+                    url={activeVideo.url}
+                    className="absolute top-0 left-0"
+                    width="100%"
+                    height="100%"
+                    controls={true}
+                    playbackRate={playbackRate}
+                    onDuration={(duration) => {
+                      if (duration) setDuration(duration);
+                    }}
+                    onProgress={({ playedSeconds }) => {
+                      const diff = playedSeconds - lastPlayedSeconds;
+                      if (diff > 0 && diff < 2) {
+                        setWatchedSeconds(prev => prev + diff);
                       }
-                    }
-                  }}
-                />
+                      setLastPlayedSeconds(playedSeconds);
+
+                      if (duration > 0 && activeVideo && user) {
+                        const percentWatched = watchedSeconds / duration;
+                        if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
+                          setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
+                          supabase.from('user_progress').insert([{
+                            user_id: user.id,
+                            video_id: activeVideo.id,
+                            completed: true
+                          }]).then(({ error }) => {
+                            if (error) {
+                              console.error('Erro ao salvar progresso:', error);
+                              setUserProgress(prev => {
+                                const newProgress = { ...prev };
+                                delete newProgress[activeVideo.id];
+                                return newProgress;
+                              });
+                            }
+                          });
+                        }
+                      }
+                    }}
+                  />
+                ) : (
+                  <video
+                    src={activeVideo.url}
+                    className="absolute top-0 left-0 w-full h-full"
+                    controls
+                    autoPlay
+                    playsInline
+                    onDurationChange={(e) => {
+                      const duration = (e.target as HTMLVideoElement).duration;
+                      if (duration) setDuration(duration);
+                    }}
+                    onTimeUpdate={(e) => {
+                      const playedSeconds = (e.target as HTMLVideoElement).currentTime;
+                      const diff = playedSeconds - lastPlayedSeconds;
+                      if (diff > 0 && diff < 2) {
+                        setWatchedSeconds(prev => prev + diff);
+                      }
+                      setLastPlayedSeconds(playedSeconds);
+
+                      if (duration > 0 && activeVideo && user) {
+                        const percentWatched = watchedSeconds / duration;
+                        if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
+                          setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
+                          supabase.from('user_progress').insert([{
+                            user_id: user.id,
+                            video_id: activeVideo.id,
+                            completed: true
+                          }]).then(({ error }) => {
+                            if (error) {
+                              console.error('Erro ao salvar progresso:', error);
+                              setUserProgress(prev => {
+                                const newProgress = { ...prev };
+                                delete newProgress[activeVideo.id];
+                                return newProgress;
+                              });
+                            }
+                          });
+                        }
+                      }
+                    }}
+                  />
+                )}
               </div>
               
               <div className="p-4 bg-gray-950 flex justify-between items-center text-sm border-b border-gray-800 flex-shrink-0">
