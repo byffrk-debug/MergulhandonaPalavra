@@ -327,7 +327,8 @@ export default function App() {
     const { data, error } = await supabase.from('videos').insert([{
       title: newTitle,
       url: newUrl,
-      module: newModule
+      module: newModule,
+      content: newContent || null
     }]).select();
 
     if (error) {
@@ -368,6 +369,7 @@ export default function App() {
     setLastPlayedSeconds(0);
     setDuration(0);
     setIsPlaying(true);
+    setPlaybackRate(1);
   };
 
   const closeVideo = () => {
@@ -813,6 +815,7 @@ export default function App() {
               
               <div className="relative pt-[56.25%] bg-black flex-shrink-0">
                 <ReactPlayer
+                  key={activeVideo.id}
                   url={activeVideo.url}
                   className="absolute top-0 left-0"
                   width="100%"
@@ -823,19 +826,23 @@ export default function App() {
                   onPause={() => setIsPlaying(false)}
                   onEnded={() => setIsPlaying(false)}
                   playbackRate={playbackRate}
-                  config={{ file: { forceVideo: true } }}
+                  onError={(e) => console.error('Erro no player:', e)}
                   onDuration={(duration) => {
                     if (duration) setDuration(duration);
                   }}
                   onProgress={({ playedSeconds }) => {
                     const diff = playedSeconds - lastPlayedSeconds;
+                    let nextWatchedSeconds = watchedSeconds;
+                    
                     if (diff > 0 && diff < 2) {
-                      setWatchedSeconds(prev => prev + diff);
+                      nextWatchedSeconds = watchedSeconds + diff;
+                      setWatchedSeconds(nextWatchedSeconds);
                     }
+                    
                     setLastPlayedSeconds(playedSeconds);
 
                     if (duration > 0 && activeVideo && user) {
-                      const percentWatched = watchedSeconds / duration;
+                      const percentWatched = nextWatchedSeconds / duration;
                       if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
                         setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
                         supabase.from('user_progress').insert([{
