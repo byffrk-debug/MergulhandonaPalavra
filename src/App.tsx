@@ -821,7 +821,9 @@ export default function App() {
                   playing={isPlaying}
                   onPlay={() => setIsPlaying(true)}
                   onPause={() => setIsPlaying(false)}
+                  onEnded={() => setIsPlaying(false)}
                   playbackRate={playbackRate}
+                  config={{ file: { forceVideo: true } }}
                   onDuration={(duration) => {
                     if (duration) setDuration(duration);
                   }}
