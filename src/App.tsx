@@ -63,22 +63,24 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
         const moduleFontSize = canvas.height * 0.025;
         const dateFontSize = canvas.height * 0.020;
 
-        // Draw Name (Y: ~31.5%)
+        // Draw Name (Y: ~31.2%)
         ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = '#111827';
         ctx.font = `${nameFontSize}px "Times New Roman", Times, serif`;
-        ctx.fillText(user.name, canvas.width / 2, canvas.height * 0.315);
+        ctx.fillText(user.name, canvas.width / 2, canvas.height * 0.312);
 
-        // Draw Module Name (Y: ~44%)
+        // Draw Module Name (Y: ~43.7%)
+        ctx.textAlign = 'center';
         ctx.fillStyle = '#1f2937';
         ctx.font = `${moduleFontSize}px Arial, Helvetica, sans-serif`;
-        ctx.fillText(moduleName.toUpperCase(), canvas.width / 2, canvas.height * 0.44);
+        ctx.fillText(moduleName.toUpperCase(), canvas.width / 2, canvas.height * 0.437);
 
-        // Draw Date (X: ~23.1%, Y: ~64.2%)
+        // Draw Date (X: ~26.2%, Y: ~63.9%)
+        ctx.textAlign = 'center';
         ctx.fillStyle = '#1f2937';
         ctx.font = `${dateFontSize}px Arial, Helvetica, sans-serif`;
-        ctx.fillText(new Date().toLocaleDateString('pt-BR'), canvas.width * 0.231, canvas.height * 0.642);
+        ctx.fillText(new Date().toLocaleDateString('pt-BR'), canvas.width * 0.262, canvas.height * 0.639);
 
         // Generate Image URL
         const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
@@ -142,22 +144,22 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
               <div className="absolute inset-0 z-10">
                 
                 {/* Student Name */}
-                <div className="absolute w-full text-center px-12" style={{ top: '31.5%' }}>
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal text-gray-900 tracking-wide" style={{ fontFamily: 'serif' }}>
+                <div className="absolute w-full text-center px-12" style={{ top: '31.2%', transform: 'translateY(-100%)' }}>
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-normal text-gray-900 tracking-wide leading-none" style={{ fontFamily: 'serif' }}>
                     {user.name}
                   </h2>
                 </div>
                 
                 {/* Module Name */}
-                <div className="absolute w-full text-center px-12" style={{ top: '44%' }}>
-                  <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-gray-800 uppercase tracking-wider">
+                <div className="absolute w-full text-center px-12" style={{ top: '43.7%', transform: 'translateY(-100%)' }}>
+                  <h3 className="text-lg md:text-xl lg:text-2xl font-medium text-gray-800 uppercase tracking-wider leading-none">
                     {moduleName}
                   </h3>
                 </div>
                 
                 {/* Date */}
-                <div className="absolute text-center w-48" style={{ top: '64.2%', left: '23.1%', transform: 'translateX(-50%)' }}>
-                  <p className="font-normal text-gray-800 text-sm md:text-base">{new Date().toLocaleDateString('pt-BR')}</p>
+                <div className="absolute text-center w-48" style={{ top: '63.9%', left: '26.2%', transform: 'translate(-50%, -100%)' }}>
+                  <p className="font-normal text-gray-800 text-sm md:text-base leading-none">{new Date().toLocaleDateString('pt-BR')}</p>
                 </div>
               </div>
             </div>
