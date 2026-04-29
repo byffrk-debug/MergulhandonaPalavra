@@ -97,7 +97,7 @@ Retorne APENAS JSON válido, sem markdown:
 [{"question_text":"...","options":["A","B","C","D"],"correct_index":0}]`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite',
+        model: 'gemini-3.1-flash-lite-preview',
         contents: prompt,
       });
 
