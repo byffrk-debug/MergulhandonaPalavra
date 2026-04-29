@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, CheckCircle, Circle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon, FileText } from 'lucide-react';
+import { QuizManager } from './components/quiz/QuizManager';
+import { QuizTaker } from './components/quiz/QuizTaker';
+import { QuizBadge } from './components/quiz/QuizBadge';
 import { motion, AnimatePresence } from 'motion/react';
 import { Toaster, toast } from 'sonner';
 import ReactPlayer from 'react-player';
@@ -209,6 +212,10 @@ export default function App() {
   const [newModule, setNewModule] = useState('');
   const [newContent, setNewContent] = useState('');
 
+  // Quiz States
+  const [activeQuizModule, setActiveQuizModule] = useState<string | null>(null);
+  const [quizPassed, setQuizPassed] = useState<Record<string, boolean>>({});
+
   // Player States
   const [activeVideo, setActiveVideo] = useState<Video | null>(null);
   const [activeCertificateModule, setActiveCertificateModule] = useState<string | null>(null);
@@ -256,6 +263,7 @@ export default function App() {
     if (user) {
       fetchVideos();
       fetchProgress(user.id);
+      fetchQuizPassed(user.id);
     }
   }, [user]);
 
@@ -266,6 +274,20 @@ export default function App() {
     } else if (data) {
       setVideos(data);
     }
+  };
+
+  const fetchQuizPassed = async (userId: string) => {
+    const { data } = await supabase
+      .from('quiz_attempts')
+      .select('quiz_id, passed, quizzes(module_name)')
+      .eq('user_id', userId)
+      .eq('passed', true);
+
+    const passed: Record<string, boolean> = {};
+    (data ?? []).forEach((a: any) => {
+      if (a.quizzes?.module_name) passed[a.quizzes.module_name] = true;
+    });
+    setQuizPassed(passed);
   };
 
   const fetchProgress = async (userId: string) => {
@@ -660,6 +682,20 @@ export default function App() {
                 </button>
               </div>
             </form>
+
+            {/* Quiz Manager por módulo */}
+            {modules.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-sm font-semibold text-cyan-400 mb-2 uppercase tracking-wide">Gerenciar Quizzes por Módulo</h3>
+                {modules.map(mod => (
+                  <QuizManager
+                    key={mod}
+                    moduleName={mod}
+                    moduleVideos={videos.filter(v => v.module === mod)}
+                  />
+                ))}
+              </div>
+            )}
           </motion.section>
         )}
 
@@ -679,7 +715,9 @@ export default function App() {
               modules.map((moduleName, moduleIndex) => {
                 const moduleVideos = videos.filter(v => v.module === moduleName);
                 const progress = getModuleProgress(moduleName);
-                
+                const isComplete = progress.percent === 100;
+                const canGetCertificate = isComplete && (quizPassed[moduleName] ?? false);
+
                 return (
                   <div key={moduleName} className="mb-8">
                     <h3 className="text-xl font-semibold text-white mb-4 flex items-center">
@@ -744,28 +782,43 @@ export default function App() {
                         );
                       })}
                       
+                      {/* Quiz Badge — aparece quando módulo está 100% concluído */}
+                      {isComplete && !user.isAdmin && (
+                        <QuizBadge
+                          moduleName={moduleName}
+                          userId={user.id}
+                          onTakeQuiz={() => setActiveQuizModule(moduleName)}
+                        />
+                      )}
+
                       {/* Certificate Item */}
                       <motion.div
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: moduleVideos.length * 0.05 }}
-                        onClick={() => progress.percent === 100 && setActiveCertificateModule(moduleName)}
+                        onClick={() => canGetCertificate && setActiveCertificateModule(moduleName)}
                         className={`cursor-pointer group flex items-center justify-between p-5 rounded-2xl border transition-all duration-300 ${
-                          progress.percent === 100 
-                            ? 'bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]' 
-                            : 'bg-gray-900/80 border-gray-800 hover:border-gray-700'
+                          canGetCertificate
+                            ? 'bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.1)]'
+                            : isComplete
+                              ? 'bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-blue-500/30'
+                              : 'bg-gray-900/80 border-gray-800 hover:border-gray-700'
                         }`}
                       >
                         <div className="flex items-center flex-1 min-w-0 mr-4">
                           <div className="flex-shrink-0 mr-4">
-                            <Award className={`w-8 h-8 ${progress.percent === 100 ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'text-gray-600'}`} />
+                            <Award className={`w-8 h-8 ${canGetCertificate ? 'text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : isComplete ? 'text-blue-400' : 'text-gray-600'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h4 className={`text-lg font-medium truncate ${progress.percent === 100 ? 'text-yellow-400' : 'text-gray-400'}`}>
+                            <h4 className={`text-lg font-medium truncate ${canGetCertificate ? 'text-yellow-400' : isComplete ? 'text-blue-400' : 'text-gray-400'}`}>
                               Certificado: {moduleName}
                             </h4>
                             <p className="text-sm text-gray-500 mt-1">
-                              {progress.percent === 100 ? 'Disponível para visualizar/baixar' : `Progresso: ${progress.percent}%`}
+                              {canGetCertificate
+                                ? 'Disponível para visualizar/baixar'
+                                : isComplete
+                                  ? 'Complete o quiz do módulo para desbloquear'
+                                  : `Progresso: ${progress.percent}%`}
                             </p>
                           </div>
                         </div>
@@ -895,6 +948,21 @@ export default function App() {
               )}
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Quiz Taker Modal */}
+      <AnimatePresence>
+        {activeQuizModule && (
+          <QuizTaker
+            moduleName={activeQuizModule}
+            userId={user.id}
+            onClose={() => setActiveQuizModule(null)}
+            onPassed={() => {
+              setQuizPassed(prev => ({ ...prev, [activeQuizModule]: true }));
+              setActiveQuizModule(null);
+            }}
+          />
         )}
       </AnimatePresence>
 
