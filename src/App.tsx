@@ -840,9 +840,9 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/95 backdrop-blur-md overflow-y-auto"
           >
-            <div className="w-full max-w-5xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+            <div className="w-full max-w-5xl bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col my-auto">
               <div className="flex justify-between items-center p-4 border-b border-gray-800 bg-gray-950">
                 <h3 className="text-lg font-medium text-white truncate pr-4">{activeVideo.title}</h3>
                 <div className="flex items-center gap-4">
@@ -936,7 +936,7 @@ export default function App() {
 
               {/* Complementary Content Section */}
               {activeVideo.content && (
-                <div className="p-6 bg-gray-900 overflow-y-auto max-h-[40vh] custom-scrollbar">
+                <div className="p-6 bg-gray-900 overflow-y-auto max-h-[35vh] custom-scrollbar">
                   <h4 className="text-lg font-semibold text-white mb-4 flex items-center">
                     <FileText className="w-5 h-5 mr-2 text-pink-400" />
                     Material Complementar
