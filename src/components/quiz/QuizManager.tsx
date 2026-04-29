@@ -102,7 +102,7 @@ Retorne APENAS um JSON válido (sem markdown, sem explicações) com este format
 ]`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.0-flash-lite',
         contents: prompt,
       });
 
