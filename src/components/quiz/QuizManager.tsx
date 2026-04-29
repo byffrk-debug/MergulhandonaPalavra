@@ -75,9 +75,11 @@ export function QuizManager({ moduleName, moduleVideos }: Props) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) { toast.error('Chave da API Gemini não configurada.'); return; }
 
+    const MAX_CHARS = 6000;
     const videosContent = moduleVideos
-      .map(v => `Título: ${v.title}\n${v.content ? `Conteúdo:\n${v.content}` : ''}`)
-      .join('\n\n---\n\n');
+      .map(v => `Título: ${v.title}${v.content ? `\nConteúdo:\n${v.content.slice(0, 1500)}` : ''}`)
+      .join('\n\n---\n\n')
+      .slice(0, MAX_CHARS);
 
     if (!videosContent.trim()) {
       toast.error('Os vídeos deste módulo não têm material complementar para gerar perguntas.');
@@ -87,19 +89,12 @@ export function QuizManager({ moduleName, moduleVideos }: Props) {
     setGenerating(true);
     try {
       const ai = new GoogleGenAI({ apiKey });
-      const prompt = `Você é um assistente educacional cristão. Com base no conteúdo abaixo dos vídeos do módulo "${moduleName}", crie 8 perguntas de múltipla escolha para avaliar o aprendizado dos alunos.
+      const prompt = `Crie 5 perguntas de múltipla escolha sobre o módulo "${moduleName}" com base neste conteúdo:
 
-Conteúdo dos vídeos:
 ${videosContent}
 
-Retorne APENAS um JSON válido (sem markdown, sem explicações) com este formato exato:
-[
-  {
-    "question_text": "Pergunta aqui?",
-    "options": ["Opção A", "Opção B", "Opção C", "Opção D"],
-    "correct_index": 0
-  }
-]`;
+Retorne APENAS JSON válido, sem markdown:
+[{"question_text":"...","options":["A","B","C","D"],"correct_index":0}]`;
 
       const response = await ai.models.generateContent({
         model: 'gemini-2.0-flash-lite',
