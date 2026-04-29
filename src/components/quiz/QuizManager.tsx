@@ -40,7 +40,7 @@ export function QuizManager({ moduleName, moduleVideos }: Props) {
     setCreating(true);
     const { error } = await supabase.from('quizzes').insert([{
       module_name: moduleName,
-      passing_score: 70,
+      passing_score: 75,
       published: false,
     }]);
     if (error) toast.error('Erro ao criar quiz: ' + error.message);

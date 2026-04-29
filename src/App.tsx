@@ -615,7 +615,7 @@ export default function App() {
                   {completedCount} de {totalVideos} aulas concluídas
                 </p>
                 <p className="text-xs text-gray-500 mt-2">
-                  * Assista pelo menos 75% da aula para registrar como concluída.
+                  * Assista pelo menos 95% da aula para registrar como concluída.
                 </p>
               </div>
               
@@ -900,7 +900,7 @@ export default function App() {
 
                     if (duration > 0 && activeVideo && user) {
                       const percentWatched = nextWatchedSeconds / duration;
-                      if (percentWatched >= 0.75 && !userProgress[activeVideo.id]) {
+                      if (percentWatched >= 0.95 && !userProgress[activeVideo.id]) {
                         setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
                         supabase.from('user_progress').insert([{
                           user_id: user.id,
@@ -925,7 +925,7 @@ export default function App() {
               <div className="p-4 bg-gray-950 flex justify-between items-center text-sm border-b border-gray-800 flex-shrink-0">
                 <div className="text-gray-400">
                   Progresso da visualização: <span className="text-cyan-400 font-mono">{duration > 0 ? Math.round((watchedSeconds / duration) * 100) : 0}%</span>
-                  <span className="ml-2 text-xs text-gray-500">(Necessário 75% para concluir)</span>
+                  <span className="ml-2 text-xs text-gray-500">(Necessário 95% para concluir)</span>
                 </div>
                 {userProgress[activeVideo.id] && (
                   <div className="flex items-center text-cyan-400 font-medium">
