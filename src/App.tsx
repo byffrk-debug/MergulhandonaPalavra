@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, CheckCircle, Circle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon, FileText } from 'lucide-react';
+import { Play, CheckCircle, Circle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon, FileText, ChevronDown } from 'lucide-react';
 import { QuizManager } from './components/quiz/QuizManager';
 import { QuizTaker } from './components/quiz/QuizTaker';
 import { QuizBadge } from './components/quiz/QuizBadge';
@@ -232,6 +232,9 @@ export default function App() {
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isPlaying, setIsPlaying] = useState(true);
 
+  // Module expand/collapse state
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
+
   // Resume watching state
   const [videoPositions, setVideoPositions] = useState<Record<string, number>>({});
   const [seekToTime, setSeekToTime] = useState<number>(0);
@@ -279,6 +282,22 @@ export default function App() {
       fetchQuizPassed(user.id);
     }
   }, [user]);
+
+  // Initialize module expand state once videos + progress are loaded
+  useEffect(() => {
+    if (videos.length === 0) return;
+    setExpandedModules(prev => {
+      const next = { ...prev };
+      const moduleList = Array.from(new Set(videos.map(v => v.module)));
+      moduleList.forEach(mod => {
+        if (mod in next) return; // preserve manual toggles
+        const modVids = videos.filter(v => v.module === mod);
+        const allDone = modVids.length > 0 && modVids.every(v => userProgress[v.id]);
+        next[mod] = !allDone; // open if not complete, closed if complete
+      });
+      return next;
+    });
+  }, [videos, userProgress]);
 
   const fetchVideos = async () => {
     const { data, error } = await supabase.from('videos').select('*').order('created_at', { ascending: true });
@@ -766,16 +785,53 @@ export default function App() {
                 const isLocked = !user.isAdmin && moduleIndex > 0
                   && getModuleProgress(modules[moduleIndex - 1]).percent < 100;
 
+                const isExpanded = expandedModules[moduleName] ?? true;
+
                 return (
-                  <div key={moduleName} className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                      {isLocked ? (
-                        <Lock className="w-5 h-5 text-gray-600" />
-                      ) : (
-                        <Sparkles className="w-5 h-5 text-cyan-400" />
-                      )}
-                      <span className={isLocked ? 'text-gray-500' : 'text-white'}>{moduleName}</span>
-                    </h3>
+                  <div key={moduleName} className="mb-6">
+                    {/* Clickable module header */}
+                    <button
+                      onClick={() => setExpandedModules(prev => ({ ...prev, [moduleName]: !isExpanded }))}
+                      className="w-full flex items-center justify-between mb-3 group text-left"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isLocked ? (
+                          <Lock className="w-5 h-5 text-gray-600 flex-shrink-0" />
+                        ) : (
+                          <Sparkles className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                        )}
+                        <span className={`text-xl font-semibold truncate ${isLocked ? 'text-gray-500' : 'text-white'}`}>
+                          {moduleName}
+                        </span>
+                        {/* Badge compacto quando fechado */}
+                        {!isExpanded && !isLocked && (
+                          <span className={`flex-shrink-0 text-xs px-2 py-0.5 rounded-full ml-1 ${
+                            isComplete
+                              ? 'bg-cyan-500/20 text-cyan-400'
+                              : 'bg-gray-800 text-gray-500'
+                          }`}>
+                            {progress.completed}/{progress.total}{isComplete ? ' ✓' : ''}
+                          </span>
+                        )}
+                      </div>
+                      <ChevronDown
+                        className={`w-5 h-5 flex-shrink-0 ml-3 text-gray-500 group-hover:text-gray-300 transition-transform duration-300 ${
+                          isExpanded ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+
+                    {/* Conteúdo expansível */}
+                    <AnimatePresence initial={false}>
+                    {isExpanded && (
+                    <motion.div
+                      key="content"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      className="overflow-hidden"
+                    >
                     {isLocked ? (
                       <div className="space-y-3">
                         {/* Banner de aviso */}
@@ -927,6 +983,9 @@ export default function App() {
                       </motion.div>
                     </div>
                     )}
+                    </motion.div>
+                    )}
+                    </AnimatePresence>
                   </div>
                 );
               })
@@ -1018,6 +1077,12 @@ export default function App() {
                       const percentWatched = nextWatchedSeconds / duration;
                       if (percentWatched >= 0.95 && !userProgress[activeVideo.id]) {
                         setUserProgress(prev => ({ ...prev, [activeVideo.id]: true }));
+                        // Auto-collapse module when all videos are done
+                        const modVids = videos.filter(v => v.module === activeVideo.module);
+                        const doneCount = modVids.filter(v => v.id === activeVideo.id || userProgress[v.id]).length;
+                        if (doneCount >= modVids.length) {
+                          setTimeout(() => setExpandedModules(prev => ({ ...prev, [activeVideo.module]: false })), 1800);
+                        }
                         supabase.from('user_progress').upsert(
                           {
                             user_id: user.id,
