@@ -48,19 +48,27 @@ export function QuizManager({ moduleName, moduleVideos }: Props) {
     setCreating(false);
   };
 
+  const validateQuestion = (q: DraftQuestion): string | null => {
+    if (!q.question_text.trim()) return 'Preencha o texto da pergunta.';
+    if (q.question_text.length > 500) return 'Pergunta muito longa (máx. 500 caracteres).';
+    if (q.options.some(o => !o.trim())) return 'Preencha todas as opções.';
+    if (q.options.some(o => o.length > 200)) return 'Opção muito longa (máx. 200 caracteres).';
+    return null;
+  };
+
   const handleAddManual = async () => {
-    if (!quiz || !draft.question_text.trim() || draft.options.some(o => !o.trim())) {
-      toast.error('Preencha a pergunta e todas as opções.');
-      return;
-    }
+    if (!quiz) return;
+    const err = validateQuestion(draft);
+    if (err) { toast.error(err); return; }
+
     const { error } = await supabase.from('quiz_questions').insert([{
       quiz_id: quiz.id,
-      question_text: draft.question_text,
-      options: draft.options,
+      question_text: draft.question_text.trim(),
+      options: draft.options.map(o => o.trim()),
       correct_index: draft.correct_index,
       position: questions.length,
     }]);
-    if (error) toast.error('Erro ao salvar pergunta: ' + error.message);
+    if (error) toast.error('Erro ao salvar pergunta.');
     else { toast.success('Pergunta adicionada!'); setDraft(emptyDraft()); setAddingManual(false); refetch(); }
   };
 
@@ -105,7 +113,15 @@ Retorne APENAS JSON válido, sem markdown:
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error('Resposta inválida da IA');
 
-      const parsed: DraftQuestion[] = JSON.parse(jsonMatch[0]);
+      const raw: DraftQuestion[] = JSON.parse(jsonMatch[0]);
+      // Sanitizar e truncar campos vindos da IA
+      const parsed: DraftQuestion[] = raw.map(q => ({
+        question_text: String(q.question_text ?? '').slice(0, 500),
+        options: (Array.isArray(q.options) ? q.options : ['', '', '', ''])
+          .slice(0, 4)
+          .map((o: string) => String(o ?? '').slice(0, 200)),
+        correct_index: Number.isInteger(q.correct_index) ? Math.min(Math.max(q.correct_index, 0), 3) : 0,
+      }));
       setAiDraft(parsed);
       setShowAiReview(true);
       toast.success(`${parsed.length} perguntas geradas! Revise antes de salvar.`);
@@ -117,15 +133,19 @@ Retorne APENAS JSON válido, sem markdown:
 
   const handleSaveAiDraft = async () => {
     if (!quiz) return;
+    for (const q of aiDraft) {
+      const err = validateQuestion(q);
+      if (err) { toast.error(`Pergunta inválida: ${err}`); return; }
+    }
     const rows = aiDraft.map((q, i) => ({
       quiz_id: quiz.id,
-      question_text: q.question_text,
-      options: q.options,
+      question_text: q.question_text.trim(),
+      options: q.options.map(o => o.trim()),
       correct_index: q.correct_index,
       position: questions.length + i,
     }));
     const { error } = await supabase.from('quiz_questions').insert(rows);
-    if (error) toast.error('Erro ao salvar: ' + error.message);
+    if (error) toast.error('Erro ao salvar perguntas.');
     else { toast.success('Perguntas salvas!'); setAiDraft([]); setShowAiReview(false); refetch(); }
   };
 

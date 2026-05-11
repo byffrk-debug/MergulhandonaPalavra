@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, CheckCircle, Circle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon, FileText, ChevronDown } from 'lucide-react';
+import { Play, CheckCircle, Plus, Award, Download, Trash2, Video as VideoIcon, Sparkles, LogOut, X, Lock, Mail, User as UserIcon, FileText, ChevronDown } from 'lucide-react';
 import { QuizManager } from './components/quiz/QuizManager';
 import { QuizTaker } from './components/quiz/QuizTaker';
 import { QuizBadge } from './components/quiz/QuizBadge';
@@ -43,7 +43,14 @@ const getYouTubeThumbnail = (url: string) => {
   return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : null;
 };
 
-const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
+interface CertificateModalProps {
+  moduleName: string;
+  progress: { total: number; completed: number; percent: number };
+  user: { name: string };
+  onClose: () => void;
+}
+
+const CertificateModal = ({ moduleName, progress, user, onClose }: CertificateModalProps) => {
   const certificateRef = useRef<HTMLDivElement>(null);
   const bgImageRef = useRef<HTMLImageElement>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -73,12 +80,15 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
         const moduleFontSize = canvas.height * 0.025;
         const dateFontSize = canvas.height * 0.020;
 
-        // Draw Name (Y: ~31.2%)
+        // Draw Name (Y: ~31.2%) — truncate if too long
+        const displayName = user.name.length > 60
+          ? user.name.slice(0, 57) + '...'
+          : user.name;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'alphabetic';
         ctx.fillStyle = '#111827';
         ctx.font = `${nameFontSize}px "Times New Roman", Times, serif`;
-        ctx.fillText(user.name, canvas.width / 2, canvas.height * 0.312);
+        ctx.fillText(displayName, canvas.width / 2, canvas.height * 0.312);
 
         // Draw Module Name (Y: ~43.7%)
         ctx.textAlign = 'center';
@@ -119,7 +129,6 @@ const CertificateModal = ({ moduleName, progress, user, onClose }: any) => {
   };
 
   const isComplete = progress.percent === 100;
-  const remaining = progress.total - progress.completed;
 
   return (
     <motion.div
@@ -301,7 +310,10 @@ export default function App() {
   }, [videos, userProgress]);
 
   const fetchVideos = async () => {
-    const { data, error } = await supabase.from('videos').select('*').order('created_at', { ascending: true });
+    const { data, error } = await supabase
+      .from('videos')
+      .select('id, title, url, module, content')
+      .order('created_at', { ascending: true });
     if (error) {
       console.error('Erro ao buscar vídeos:', error);
     } else if (data) {
@@ -587,7 +599,7 @@ export default function App() {
             <form onSubmit={handleRegister} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">Nome Completo (para certificado)</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2 text-white outline-none focus:border-cyan-500" />
+                <input type="text" value={name} onChange={e => setName(e.target.value)} required maxLength={80} className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-2 text-white outline-none focus:border-cyan-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">E-mail</label>
