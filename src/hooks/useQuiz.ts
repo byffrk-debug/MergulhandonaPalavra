@@ -13,7 +13,7 @@ export function useQuiz(moduleName: string) {
 
     const { data: quizData } = await supabase
       .from('quizzes')
-      .select('*')
+      .select('id, module_name, passing_score, published')
       .eq('module_name', moduleName)
       .single();
 
@@ -21,7 +21,7 @@ export function useQuiz(moduleName: string) {
       setQuiz(quizData);
       const { data: qData } = await supabase
         .from('quiz_questions')
-        .select('*')
+        .select('id, quiz_id, question_text, options, correct_index, position')
         .eq('quiz_id', quizData.id)
         .order('position', { ascending: true });
       setQuestions(qData ?? []);

@@ -201,6 +201,7 @@ export default function App() {
   const [authMode, setAuthMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
   
   // Register States
   const [name, setName] = useState('');
@@ -361,7 +362,10 @@ export default function App() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) toast.error('Erro ao fazer login: ' + error.message);
+    if (error) {
+      console.error('[login]', error.message);
+      toast.error('E-mail ou senha inválidos. Tente novamente.');
+    }
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -385,7 +389,8 @@ export default function App() {
     });
 
     if (error) {
-      toast.error('Erro ao cadastrar: ' + error.message);
+      console.error('[register]', error.message);
+      toast.error('Erro ao cadastrar. Verifique os dados e tente novamente.');
     } else {
       toast.success('Cadastro realizado com sucesso! Você já pode fazer login.');
       setAuthMode('login');
@@ -402,6 +407,10 @@ export default function App() {
   const handleAddVideo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newUrl.trim() || !newModule.trim()) return;
+    if (newTitle.length > 200)   { toast.error('Título muito longo (máx. 200 caracteres).'); return; }
+    if (newModule.length > 100)  { toast.error('Nome do módulo muito longo (máx. 100 caracteres).'); return; }
+    if (newContent.length > 50000) { toast.error('Material complementar muito longo (máx. 50 000 caracteres).'); return; }
+    try { new URL(newUrl); } catch { toast.error('URL do vídeo inválida.'); return; }
     
     const { data, error } = await supabase.from('videos').insert([{
       title: newTitle,
@@ -541,11 +550,31 @@ export default function App() {
           )}
 
           {authMode === 'forgot' && (
-            <form onSubmit={(e) => { e.preventDefault(); toast.success('Link de recuperação enviado (simulação).'); setAuthMode('login'); }} className="space-y-4">
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              if (!forgotEmail) return;
+              const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+                redirectTo: `${window.location.origin}/?reset=true`,
+              });
+              if (error) {
+                toast.error('Erro ao enviar link: ' + error.message);
+              } else {
+                toast.success('Link de recuperação enviado! Verifique seu e-mail.');
+                setForgotEmail('');
+                setAuthMode('login');
+              }
+            }} className="space-y-4">
               <p className="text-gray-300 text-sm text-center mb-4">Digite seu e-mail para receber o link de recuperação de senha.</p>
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-1">E-mail</label>
-                <input type="email" required className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500/50 outline-none" placeholder="seu@email.com" />
+                <input
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={e => setForgotEmail(e.target.value)}
+                  className="w-full bg-gray-950 border border-gray-700 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-cyan-500/50 outline-none"
+                  placeholder="seu@email.com"
+                />
               </div>
               <button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-medium py-3 rounded-xl hover:shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-all">
                 Recuperar Senha

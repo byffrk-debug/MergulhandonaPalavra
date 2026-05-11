@@ -10,7 +10,7 @@ export function useQuizAttempts(userId: string, quizId: string | null) {
     if (!userId || !quizId) return;
     const { data } = await supabase
       .from('quiz_attempts')
-      .select('*')
+      .select('id, score, passed, created_at')
       .eq('user_id', userId)
       .eq('quiz_id', quizId)
       .order('created_at', { ascending: false });
